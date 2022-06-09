@@ -1,79 +1,49 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <wait.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <signal.h>
 
-
-/*constants*/
-#define EXTERNAL_COMMAND 1
-#define INTERNAL_COMMAND 2
-#define PATH_COMMAND 3
-#define INVALID_COMMAND -1
-
-#define min(x, y) (((x) < (y)) ? (x) : (y))
-
 /**
- *struct map - a struct that maps a command name to a function 
- *
- *@command_name: name of the command
- *@func: the function that executes the command
+ * struct list - linked list for environmental variables
+ * @var: holds environmental variable string
+ * @next: points to next node
  */
-
-typedef struct map
+typedef struct list
 {
-	char *command_name;
-	void (*func)(char **command);
-} function_map;
+	char *var;
+	struct list *next;
 
-extern char **environ;
-extern char *line;
-extern char **commands;
-extern char *shell_name;
-extern int status;
+} list_t;
 
-/*helpers*/
-void print(char *, int);
-char **tokenizer(char *, char *);
-void remove_newline(char *);
-int _strlen(char *);
-void _strcpy(char *, char *);
+#define MAXARGS 128 /* maxargs in struct can't be variable, use define */
 
-/*helpers2*/
-int _strcmp(char *, char *);
-char *_strcat(char *, char *);
-int _strspn(char *, char *);
-int _strcspn(char *, char *);
-char *_strchr(char *, char);
+struct command{
+	int argc; /* number of args */
+	char *argv[MAXARGS]; /* arguments list */
+	enum built_t{ /* is argv[0] a builtin command? */
+		NONE, QUIT, JOBS, BG, FG
+	} builtin;
+};
 
-/*helpers3*/
-char *_strtok_r(char *, char *, char **);
-int _atoi(char *);
-void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
-void ctrl_c_handler(int);
-void remove_comment(char *);
-
-/*utils*/
-int parse_command(char *);
-void execute_command(char **, int);
-char *check_path(char *);
-void (*get_func(char *))(char **);
-char *_getenv(char *);
-
-/*built_in*/
-void env(char **);
-void quit(char **);
-
-/*main*/
-extern void non_interactive(void);
-extern void initializer(char **current_command, int type_command);
+char *_getenv(const char *name);
+void eval(char *cmdline);
+int parse(const char *cmdline, struct command *cmd);
+void runSystemCommand(struct command *cmd, int bg);
+list_t *env_linked_list(char **env);
+list_t *add_end_node(list_t **head, char *str);
+size_t print_list(list_t *h);
+int delete_nodeint_at_index(list_t **head, int index);
+void free_linked_list(list_t *list);
 
 #endif
